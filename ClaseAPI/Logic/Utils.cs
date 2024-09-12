@@ -6,7 +6,58 @@ using Microsoft.AspNetCore.Mvc;
 public class Utils
 {
     public Utils() { }
-    public static List<Actions> getOrdersFromDB(string? Status, DateTime? OrderDate)
+
+    public static List<Actions> getAllOrders()
+    {
+        string sql_connection = DBHelper.GetConnectionString();
+        List<Actions> actions = new List<Actions>();
+
+        string query = "SELECT * FROM ORDERS_HISTORY";
+
+        try
+        {
+            using (SqlConnection sqlConnection = new SqlConnection(sql_connection))
+            {
+                sqlConnection.Open();
+                using (SqlCommand cmd = new SqlCommand(query, sqlConnection))
+                {
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            Actions action = new Actions
+                            {
+                                TxNumber = (int)reader["TX_NUMBER"],
+                                OrderDate = (DateTime)reader["ORDER_DATE"],
+                                Action = (string)reader["ACTION"],
+                                Status = (string)reader["STATUS"],
+                                Symbol = (string)reader["SYMBOL"],
+                                Quantity = (int)reader["QUANTITY"],
+                                Price = (decimal)reader["PRICE"]
+                            };
+                            actions.Add(action);
+                        }
+                    }
+                }
+            }
+
+            return actions;
+        }
+        catch (SqlException ex)
+        {
+            // Manejo básico de errores
+            Console.WriteLine($"SQL Error: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Manejo básico de errores
+            Console.WriteLine($"Error: {ex.Message}");
+            throw;
+        }
+    }
+
+    public static List<Actions> getOrdersByParameter(string? Status, int? year)
     {
         string sql_connection = DBHelper.GetConnectionString();
         List<Actions> actions = new List<Actions>();
@@ -20,10 +71,10 @@ public class Utils
             parameters.Add(new SqlParameter("@Status", Status));
         }
 
-        if (OrderDate.HasValue)
+        if (year.HasValue)
         {
-            query += " AND ORDER_DATE = @OrderDate";
-            parameters.Add(new SqlParameter("@OrderDate", OrderDate.Value));
+            query += " AND YEAR(ORDER_DATE) = @OrderDate";
+            parameters.Add(new SqlParameter("@OrderDate", year));
         }
 
         using (SqlConnection sqlConnection = new SqlConnection(sql_connection))

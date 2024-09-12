@@ -11,11 +11,11 @@ namespace ClaseAPI.Controllers
     {
 
         // POST api/<AutoController>
-        [HttpPost]
-        public Auto Post(Auto auto)
-        {
-            return auto;
-        }
+        //[HttpPost]
+        //public Auto Post(Auto auto)
+        //{
+        //    return auto;
+        //}
 
     }
 }

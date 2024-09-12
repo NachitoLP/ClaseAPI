@@ -4,20 +4,30 @@ using ClaseAPI.Models;
 
 namespace ClaseAPI.Controllers
 {
-    [Route("GetOperationsByStatus")]
     [ApiController]
     public class BrokerController : ControllerBase
     {
-        // GET: BrokerController
+        [Route("GetAllOperations")]
         [HttpGet]
-        public  List<Actions> GetOperationsByStatus(string? Status, DateTime? OrderDate)
+        public List<Actions> GetAllOperations()
         {
             List<Actions> actions = new List<Actions>();
-            actions = Utils.getOrdersFromDB(Status, OrderDate);
+            actions = Utils.getAllOrders();
 
             return actions;
         }
 
+        [Route("GetOperationsByParameter")]
+        [HttpGet]
+        public  List<Actions> GetOperationsByParameter(string? Status, int? year)
+        {
+            List<Actions> actions = new List<Actions>();
+            actions = Utils.getOrdersByParameter(Status, year);
+
+            return actions;
+        }
+
+        [Route("PostOperation")]
         [HttpPost]
         public Actions Post(Actions action)
         {
