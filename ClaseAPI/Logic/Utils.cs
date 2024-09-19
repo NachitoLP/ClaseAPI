@@ -60,49 +60,62 @@ public class Utils
         string sql_connection = DBHelper.GetConnectionString();
         List<Actions> actions = new List<Actions>();
 
-        string query = "SELECT TX_NUMBER, ORDER_DATE, ACTION, STATUS, SYMBOL, QUANTITY, PRICE FROM ORDERS_HISTORY WHERE 1 = 1";
-        List<SqlParameter> parameters = new List<SqlParameter>();
-
-        if (!string.IsNullOrEmpty(Status))
+        try
         {
-            query += " AND STATUS = @Status";
-            parameters.Add(new SqlParameter("@Status", Status));
-        }
+            string query = "SELECT TX_NUMBER, ORDER_DATE, ACTION, STATUS, SYMBOL, QUANTITY, PRICE FROM ORDERS_HISTORY WHERE 1 = 1";
+            List<SqlParameter> parameters = new List<SqlParameter>();
 
-        if (year.HasValue)
-        {
-            query += " AND YEAR(ORDER_DATE) = @OrderDate";
-            parameters.Add(new SqlParameter("@OrderDate", year));
-        }
-
-        using (SqlConnection sqlConnection = new SqlConnection(sql_connection))
-        {
-            sqlConnection.Open();
-            using (SqlCommand cmd = new SqlCommand(query, sqlConnection))
+            if (!string.IsNullOrEmpty(Status))
             {
-                cmd.Parameters.AddRange(parameters.ToArray());
+                query += " AND STATUS = @Status";
+                parameters.Add(new SqlParameter("@Status", Status));
+            }
 
-                using (SqlDataReader reader = cmd.ExecuteReader())
+            if (year.HasValue)
+            {
+                query += " AND YEAR(ORDER_DATE) = @OrderDate";
+                parameters.Add(new SqlParameter("@OrderDate", year));
+            }
+
+            using (SqlConnection sqlConnection = new SqlConnection(sql_connection))
+            {
+                sqlConnection.Open();
+                using (SqlCommand cmd = new SqlCommand(query, sqlConnection))
                 {
-                    while (reader.Read())
+                    cmd.Parameters.AddRange(parameters.ToArray());
+
+                    using (SqlDataReader reader = cmd.ExecuteReader())
                     {
-                        Actions action = new Actions
+                        while (reader.Read())
                         {
-                            TxNumber = (int)reader["TX_NUMBER"],
-                            OrderDate = (DateTime)reader["ORDER_DATE"],
-                            Action = (string)reader["ACTION"],
-                            Status = (string)reader["STATUS"],
-                            Symbol = (string)reader["SYMBOL"],
-                            Quantity = (int)reader["QUANTITY"],
-                            Price = (decimal)reader["PRICE"]
-                        };
-                        actions.Add(action);
+                            Actions action = new Actions
+                            {
+                                TxNumber = (int)reader["TX_NUMBER"],
+                                OrderDate = (DateTime)reader["ORDER_DATE"],
+                                Action = (string)reader["ACTION"],
+                                Status = (string)reader["STATUS"],
+                                Symbol = (string)reader["SYMBOL"],
+                                Quantity = (int)reader["QUANTITY"],
+                                Price = (decimal)reader["PRICE"]
+                            };
+                            actions.Add(action);
+                        }
                     }
                 }
             }
-        }
 
-        return actions;
+            return actions;
+        }
+        catch (SqlException ex)
+        {
+            Console.WriteLine($"SQL Error: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            throw;
+        }
     }
 
 
