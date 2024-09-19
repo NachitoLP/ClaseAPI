@@ -45,13 +45,11 @@ public class Utils
         }
         catch (SqlException ex)
         {
-            // Manejo básico de errores
             Console.WriteLine($"SQL Error: {ex.Message}");
             throw;
         }
         catch (Exception ex)
         {
-            // Manejo básico de errores
             Console.WriteLine($"Error: {ex.Message}");
             throw;
         }
@@ -122,7 +120,6 @@ public class Utils
             {
                 using (SqlCommand command = new SqlCommand(query, connection))
                 {
-                    // Agregar los parámetros al comando
                     command.Parameters.AddWithValue("@OrderDate", action.OrderDate);
                     command.Parameters.AddWithValue("@Action", action.Action);
                     command.Parameters.AddWithValue("@Status", action.Status);
@@ -140,13 +137,11 @@ public class Utils
         }
         catch (SqlException ex)
         {
-            // Manejo básico de errores
             Console.WriteLine($"SQL Error: {ex.Message}");
             throw;
         }
         catch (Exception ex)
         {
-            // Manejo básico de errores
             Console.WriteLine($"Error: {ex.Message}");
             throw;
         }
