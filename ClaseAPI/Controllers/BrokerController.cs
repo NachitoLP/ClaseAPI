@@ -19,7 +19,7 @@ namespace ClaseAPI.Controllers
 
         [Route("GetOperationsByParameter")]
         [HttpGet]
-        public  List<Actions> GetOperationsByParameter(string? Status, int? year)
+        public List<Actions> GetOperationsByParameter(string? Status, int? year)
         {
             List<Actions> actions = new List<Actions>();
             actions = Utils.getOrdersByParameter(Status, year);
@@ -33,6 +33,16 @@ namespace ClaseAPI.Controllers
         {
             Actions newOrder = Utils.PostOrder(action);
             return newOrder;
+        }
+
+        [Route("ChangeStatus")]
+        [HttpPut]
+        public Actions Put(int txnumber, string status)
+        {
+            Actions action = new Actions();
+            action = Utils.ChangeStatus(txnumber, status);
+
+            return action;
         }
     }
 }

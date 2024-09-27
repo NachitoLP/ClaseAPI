@@ -2,6 +2,9 @@
 using Microsoft.Data.SqlClient;
 using ClaseAPI.Models;
 using Microsoft.AspNetCore.Mvc;
+using System;
+using Microsoft.Extensions.Options;
+using static System.Collections.Specialized.BitVector32;
 
 public class Utils
 {
@@ -118,14 +121,116 @@ public class Utils
         }
     }
 
+    public static Actions getActionById(int txnumber)
+    {
+        try
+        {
+            Actions action = null;
+
+            string sql_connection = DBHelper.GetConnectionString();
+            string query = @"SELECT * FROM ORDERS WHERE TX_NUMBER = @TX_NUMBER";
+
+            using (SqlConnection connection = new SqlConnection(sql_connection))
+            {
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@TX_NUMBER", txnumber);
+
+                    connection.Open();
+
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            action = new Actions
+                            {
+                                TxNumber = (int)reader["TX_NUMBER"],
+                                OrderDate = (DateTime)reader["ORDER_DATE"],
+                                Action = (string)reader["ACTION"],
+                                Status = (string)reader["STATUS"],
+                                Symbol = (string)reader["SYMBOL"],
+                                Quantity = (int)reader["QUANTITY"],
+                                Price = (decimal)reader["PRICE"]
+                            };
+                        }
+                    }
+                }
+            }
+            return action;
+        }
+        catch (SqlException ex)
+        {
+            Console.WriteLine($"SQL Error: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            throw;
+        }
+    }
+    public static StockMarket getActionBySymbol(string Symbol)
+    {
+        try
+        {
+            StockMarket action = null;
+
+            string sql_connection = DBHelper.GetConnectionString();
+            string query = @"SELECT * FROM stock_market_shares WHERE SYMBOL LIKE @SYMBOL";
+
+            using (SqlConnection connection = new SqlConnection(sql_connection))
+            {
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@SYMBOL", "%" + Symbol + "%");
+
+                    connection.Open();
+
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            action = new StockMarket
+                            {
+                                StockId = (int)reader["ID"],
+                                StockSymbol = (string)reader["SYMBOL"],
+                                StockUnitPrice = (decimal)reader["UNIT_PRICE"]
+                            };
+                        }
+                    }
+                }
+            }
+            return action;
+        }
+        catch (SqlException ex)
+        {
+            Console.WriteLine($"SQL Error: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            throw;
+        }
+    }
 
     public static Actions PostOrder (Actions action)
     {
         try
         {
             string sql_connection = DBHelper.GetConnectionString();
+            StockMarket stockAction = getActionBySymbol(action.Symbol);
+
+            decimal unitPrice = stockAction?.StockUnitPrice ?? 500.00m;
+            decimal actionPrice = action.Quantity * unitPrice;
+
+            if (actionPrice > 9999999999.99m)
+            {
+                throw new ArgumentOutOfRangeException("El precio de la acción excede el límite permitido.");
+            }
+
             string query = @"
-                INSERT INTO ORDERS_HISTORY (ORDER_DATE, ACTION, STATUS, SYMBOL, QUANTITY, PRICE)
+                INSERT INTO ORDERS (ORDER_DATE, ACTION, STATUS, SYMBOL, QUANTITY, PRICE)
                 VALUES (@OrderDate, @Action, @Status, @Symbol, @Quantity, @Price);
             ";
 
@@ -138,8 +243,46 @@ public class Utils
                     command.Parameters.AddWithValue("@Status", action.Status);
                     command.Parameters.AddWithValue("@Symbol", action.Symbol);
                     command.Parameters.AddWithValue("@Quantity", action.Quantity);
-                    command.Parameters.AddWithValue("@Price", action.Price);
+                    command.Parameters.AddWithValue("@Price", actionPrice);
 
+                    connection.Open();
+                    command.ExecuteNonQuery();
+                    connection.Close();
+                }
+            }
+
+            return action;
+        }
+        catch (SqlException ex)
+        {
+            Console.WriteLine($"SQL Error: {ex.Message}");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            throw;
+        }
+    }
+
+    public static Actions ChangeStatus(int txnumber, string status)
+    {
+        try
+        {
+            string sql_connection = DBHelper.GetConnectionString();
+
+            Actions action = getActionById(txnumber);
+
+
+            string query = @"UPDATE ORDERS SET STATUS = @Status WHERE TX_NUMBER = @TxNumber";
+
+            using (SqlConnection connection = new SqlConnection(sql_connection))
+            {
+                using (SqlCommand command = new SqlCommand(query, connection))
+                {
+                    command.Parameters.AddWithValue("@TxNumber", action.TxNumber);
+                    command.Parameters.AddWithValue("@Status", status);
+                    
                     connection.Open();
                     command.ExecuteNonQuery();
                     connection.Close();
