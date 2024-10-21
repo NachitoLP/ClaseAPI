@@ -15,7 +15,7 @@ public class Utils
         string sql_connection = DBHelper.GetConnectionString();
         List<Actions> actions = new List<Actions>();
 
-        string query = "SELECT * FROM ORDERS_HISTORY";
+        string query = "SELECT * FROM ORDERS";
 
         try
         {
@@ -65,7 +65,7 @@ public class Utils
 
         try
         {
-            string query = "SELECT TX_NUMBER, ORDER_DATE, ACTION, STATUS, SYMBOL, QUANTITY, PRICE FROM ORDERS_HISTORY WHERE 1 = 1";
+            string query = "SELECT TX_NUMBER, ORDER_DATE, ACTION, STATUS, SYMBOL, QUANTITY, PRICE FROM ORDERS WHERE 1 = 1";
             List<SqlParameter> parameters = new List<SqlParameter>();
 
             if (!string.IsNullOrEmpty(Status))
@@ -214,6 +214,32 @@ public class Utils
         }
     }
 
+    private static void LogOrderHistory(Actions action, string operation, decimal actionPrice)
+    {
+        string sql_connection = DBHelper.GetConnectionString();
+
+        string historyQuery = @"
+            INSERT INTO ORDERS_HISTORY (ACTION, STATUS, SYMBOL, QUANTITY, PRICE, OPERATION_DATE, OPERATION)
+            VALUES (@Action, @Status, @Symbol, @Quantity, @Price, @OperationDate, @Operation);
+        ";
+
+        using (SqlConnection connection = new SqlConnection(sql_connection))
+        {
+            using (SqlCommand command = new SqlCommand(historyQuery, connection))
+            {
+                command.Parameters.AddWithValue("@Action", action.Action);
+                command.Parameters.AddWithValue("@Status", action.Status);
+                command.Parameters.AddWithValue("@Symbol", action.Symbol);
+                command.Parameters.AddWithValue("@Quantity", action.Quantity);
+                command.Parameters.AddWithValue("@Price", actionPrice);
+                command.Parameters.AddWithValue("@OperationDate", DateTime.Now);
+                command.Parameters.AddWithValue("@Operation", operation);
+
+                connection.Open();
+                command.ExecuteNonQuery();
+            }
+        }
+    }
     public static Actions PostOrder (Actions action)
     {
         try
@@ -250,6 +276,8 @@ public class Utils
                     connection.Close();
                 }
             }
+
+            LogOrderHistory(action, "INSERT", actionPrice);
 
             return action;
         }
@@ -288,6 +316,8 @@ public class Utils
                     connection.Close();
                 }
             }
+
+            LogOrderHistory(action, "UPDATE", action.Price);
 
             return action;
         }
