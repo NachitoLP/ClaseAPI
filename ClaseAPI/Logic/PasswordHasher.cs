@@ -25,20 +25,17 @@ public class PasswordHasher
         return $"{Convert.ToBase64String(salt)}:{hashed}";
     }
 
-    public static bool VerifyPassword(string password, string hashedPassword)
+    public static bool VerifyPassword(string password, string storedHash, string salt)
     {
-        // Obtener el salt y el hash almacenados
-        string[] parts = hashedPassword.Split(':');
-        byte[] salt = Convert.FromBase64String(parts[0]);
-        string storedHash = parts[1];
+        byte[] saltBytes = Convert.FromBase64String(salt);
 
-        // Generar el hash de la contraseña proporcionada y comparar con el hash almacenado
         string computedHash = Convert.ToBase64String(KeyDerivation.Pbkdf2(
             password: password,
-            salt: salt,
+            salt: saltBytes,
             prf: KeyDerivationPrf.HMACSHA256,
             iterationCount: 10000,
-            numBytesRequested: 256 / 8));
+            numBytesRequested: 256 / 8)
+            );
 
         return storedHash == computedHash;
     }

@@ -68,23 +68,27 @@ namespace ClaseAPI.Middlewares
                 {
                     await connection.OpenAsync();
 
-                    var command = new SqlCommand("SELECT PasswordHash FROM Users WHERE Username = @Username", connection);
+                    var command = new SqlCommand("SELECT UserPassword, UserPasswordSalt FROM Users WHERE UserName = @Username", connection);
                     command.Parameters.Add(new SqlParameter("@Username", username));
 
-                    var storedHash = await command.ExecuteScalarAsync() as string;
-
-                    if (storedHash == null)
+                    using (var reader = await command.ExecuteReaderAsync())
                     {
-                        return false; // Usuario no encontrado
-                    }
+                        if (!reader.Read())
+                        {
+                            return false; // Usuario no encontrado
+                        }
 
-                    return PasswordHasher.VerifyPassword(password, storedHash);
+                        string storedHash = (string)reader["UserPassword"];
+                        string storedSalt = (string)reader["UserPasswordSalt"];
+
+                        return PasswordHasher.VerifyPassword(password, storedHash, storedSalt);
+                    }
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex);
-                return false; // En caso de error, considera que la autenticación falló
+                return false;
             }
         }
     }
